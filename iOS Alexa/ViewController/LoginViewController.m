@@ -11,7 +11,7 @@
 #import "iOS_Alexa-Swift.h"
 #import "MBProgressHUD.h"
 
-#define SCOPE_DATA @"{\"alexa:all\":{\"productID\":\"<< Product ID Here >>\",""\"productInstanceAttributes\":{\"deviceSerialNumber\":\"<< Device Serial Number Here >>\"}}}"
+#define SCOPE_DATA @"{\"alexa:all\":{\"productID\":\"ryan_gross_testing\",""\"productInstanceAttributes\":{\"deviceSerialNumber\":\"123456\"}}}"
 
 @interface LoginViewController () <AIAuthenticationDelegate>
 {

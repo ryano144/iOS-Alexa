@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Send data to Alexa</string>
 	<key>APIKey</key>
 	<string></string>
 	<key>CFBundleDevelopmentRegion</key>
@@ -26,10 +28,10 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.chintan.iOS-Alexa</string>
+			<string>com.ryano144.iOS-Alexa</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>amzn-com.chintan.iOS-Alexa</string>
+				<string>amzn-com.ryano144.iOS-Alexa</string>
 			</array>
 		</dict>
 	</array>

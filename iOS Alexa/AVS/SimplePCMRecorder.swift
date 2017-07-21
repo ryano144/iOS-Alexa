@@ -1,4 +1,4 @@
-//
+ //
 //  SimplePCMRecorder.swift
 //  AVSExample
 //
@@ -10,27 +10,33 @@ import AudioToolbox
 struct RecorderState {
     var setupComplete: Bool
     var dataFormat: AudioStreamBasicDescription
-    var queue: UnsafeMutablePointer<AudioQueueRef>
-    var buffers: [AudioQueueBufferRef]
-    var recordFile: AudioFileID
+    var queue: UnsafeMutablePointer<AudioQueueRef?>
+    var buffers: [AudioQueueBufferRef?]
+    var recordFile: AudioFileID?
     var bufferByteSize: UInt32
     var currentPacket: Int64
     var isRunning: Bool
     var recordPacket: Int64
-    var errorHandler: ((error:NSError) -> Void)?
+    var errorHandler: ((_ error:NSError) -> Void)?
+}
+
+extension Data {
+    func castToCPointer<T>() -> T {
+        return self.withUnsafeBytes { $0.pointee }
+    }
 }
 
 class SimplePCMRecorder {
     
-    private var recorderState: RecorderState
+    fileprivate var recorderState: RecorderState
     
     init(numberBuffers:Int) {
         self.recorderState = RecorderState(
             setupComplete: false,
             dataFormat: AudioStreamBasicDescription(),
-            queue: UnsafeMutablePointer<AudioQueueRef>.alloc(1),
-            buffers: Array<AudioQueueBufferRef>(count: numberBuffers, repeatedValue: nil),
-            recordFile: AudioFileID(),
+            queue: UnsafeMutablePointer<AudioQueueRef?>.allocate(capacity: 1),
+            buffers: Array<AudioQueueBufferRef?>.init(repeating: (nil as AudioQueueBufferRef?), count: numberBuffers),
+            recordFile: nil,
             bufferByteSize: 0,
             currentPacket: 0,
             isRunning: false,
@@ -39,10 +45,10 @@ class SimplePCMRecorder {
     }
     
     deinit {
-        self.recorderState.queue.dealloc(1)
+        self.recorderState.queue.deallocate(capacity: 1)
     }
     
-    func setupForRecording(outputFileName:String, sampleRate:Float64, channels:UInt32, bitsPerChannel:UInt32, errorHandler: ((error:NSError) -> Void)?) throws {
+    func setupForRecording(_ outputFileName:String, sampleRate:Float64, channels:UInt32, bitsPerChannel:UInt32, errorHandler: ((_ error:NSError) -> Void)?) throws {
         self.recorderState.dataFormat.mFormatID = kAudioFormatLinearPCM
         self.recorderState.dataFormat.mSampleRate = sampleRate
         self.recorderState.dataFormat.mChannelsPerFrame = channels
@@ -55,49 +61,53 @@ class SimplePCMRecorder {
         
         self.recorderState.errorHandler = errorHandler
         
-        try osReturningCall { AudioFileCreateWithURL(NSURL(fileURLWithPath: outputFileName), kAudioFileWAVEType, &self.recorderState.dataFormat, AudioFileFlags.DontPageAlignAudioData.union(.EraseFile), &self.recorderState.recordFile) }
+        try osReturningCall { AudioFileCreateWithURL(URL(fileURLWithPath: outputFileName) as CFURL, kAudioFileWAVEType, &self.recorderState.dataFormat, AudioFileFlags.dontPageAlignAudioData.union(.eraseFile), &(self.recorderState.recordFile)) }
         
         self.recorderState.setupComplete = true
     }
+    
+    
+    
+    
     
     func startRecording() throws {
         
         guard self.recorderState.setupComplete else { throw NSError(domain: Config.Error.ErrorDomain, code: Config.Error.PCMSetupIncompleteErrorCode, userInfo: [NSLocalizedDescriptionKey : "Setup needs to be called before starting"]) }
         
-        let osAQNI = AudioQueueNewInput(&self.recorderState.dataFormat, { (inUserData:UnsafeMutablePointer<Void>, inAQ:AudioQueueRef, inBuffer:AudioQueueBufferRef, inStartTime:UnsafePointer<AudioTimeStamp>, inNumPackets:UInt32, inPacketDesc:UnsafePointer<AudioStreamPacketDescription>) -> Void in
+        let osAQNI = AudioQueueNewInput(&self.recorderState.dataFormat, { (inUserData:UnsafeMutableRawPointer?, inAQ:AudioQueueRef, inBuffer:AudioQueueBufferRef, inStartTime:UnsafePointer<AudioTimeStamp>, inNumPackets:UInt32, inPacketDesc:UnsafePointer<AudioStreamPacketDescription>?) -> Void in
             
-            let internalRSP = unsafeBitCast(inUserData, UnsafeMutablePointer<RecorderState>.self)
+            let internalRSP = inUserData!.assumingMemoryBound(to: RecorderState.self)
             
             if inNumPackets > 0 {
                 var packets = inNumPackets
                 
-                let os = AudioFileWritePackets(internalRSP.memory.recordFile, false, inBuffer.memory.mAudioDataByteSize, inPacketDesc, internalRSP.memory.recordPacket, &packets, inBuffer.memory.mAudioData)
-                if os != 0 && internalRSP.memory.errorHandler != nil {
-                    internalRSP.memory.errorHandler!(error:NSError(domain: NSOSStatusErrorDomain, code: Int(os), userInfo: nil))
+                let os = AudioFileWritePackets(internalRSP.pointee.recordFile!, false, inBuffer.pointee.mAudioDataByteSize, inPacketDesc, internalRSP.pointee.recordPacket, &packets, inBuffer.pointee.mAudioData)
+                if os != 0 && internalRSP.pointee.errorHandler != nil {
+                    internalRSP.pointee.errorHandler!(NSError(domain: NSOSStatusErrorDomain, code: Int(os), userInfo: nil))
                 }
 
-                internalRSP.memory.recordPacket += Int64(packets)
+                internalRSP.pointee.recordPacket += Int64(packets)
             }
             
-            if internalRSP.memory.isRunning {
+            if internalRSP.pointee.isRunning {
                 let os = AudioQueueEnqueueBuffer(inAQ, inBuffer, 0, nil)
-                if os != 0 && internalRSP.memory.errorHandler != nil {
-                    internalRSP.memory.errorHandler!(error:NSError(domain: NSOSStatusErrorDomain, code: Int(os), userInfo: nil))
+                if os != 0 && internalRSP.pointee.errorHandler != nil {
+                    internalRSP.pointee.errorHandler!(NSError(domain: NSOSStatusErrorDomain, code: Int(os), userInfo: nil))
                 }
             }
             
-        }, &self.recorderState, nil, nil, 0, self.recorderState.queue)
+        } as AudioQueueInputCallback, &self.recorderState, nil, nil, 0, self.recorderState.queue)
         
         guard osAQNI == 0 else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(osAQNI), userInfo: nil) }
         
         let bufferByteSize = try self.computeRecordBufferSize(self.recorderState.dataFormat, seconds: 0.5)
-        for (var i = 0; i < self.recorderState.buffers.count; ++i) {
-            try osReturningCall { AudioQueueAllocateBuffer(self.recorderState.queue.memory, UInt32(bufferByteSize), &self.recorderState.buffers[i]) }
+        for i in 0 ..< self.recorderState.buffers.count {
+            try osReturningCall { AudioQueueAllocateBuffer(self.recorderState.queue.pointee!, UInt32(bufferByteSize), &self.recorderState.buffers[i]) }
             
-            try osReturningCall { AudioQueueEnqueueBuffer(self.recorderState.queue.memory, self.recorderState.buffers[i], 0, nil) }
+            try osReturningCall { AudioQueueEnqueueBuffer(self.recorderState.queue.pointee!, self.recorderState.buffers[i]!, 0, nil) }
         }
         
-        try osReturningCall { AudioQueueStart(self.recorderState.queue.memory, nil) }
+        try osReturningCall { AudioQueueStart(self.recorderState.queue.pointee!, nil) }
         
         self.recorderState.isRunning = true
     }
@@ -105,12 +115,12 @@ class SimplePCMRecorder {
     func stopRecording() throws {
         self.recorderState.isRunning = false
         
-        try osReturningCall { AudioQueueStop(self.recorderState.queue.memory, true) }
-        try osReturningCall { AudioQueueDispose(self.recorderState.queue.memory, true) }
-        try osReturningCall { AudioFileClose(self.recorderState.recordFile) }
+        try osReturningCall { AudioQueueStop(self.recorderState.queue.pointee!, true) }
+        try osReturningCall { AudioQueueDispose(self.recorderState.queue.pointee!, true) }
+        try osReturningCall { AudioFileClose(self.recorderState.recordFile!) }
     }
     
-    private func computeRecordBufferSize(format:AudioStreamBasicDescription, seconds:Double) throws -> Int {
+    fileprivate func computeRecordBufferSize(_ format:AudioStreamBasicDescription, seconds:Double) throws -> Int {
         
         let framesNeededForBufferTime = Int(ceil(seconds * format.mSampleRate))
         
@@ -141,7 +151,7 @@ class SimplePCMRecorder {
         
     }
     
-    private func osReturningCall(osCall: () -> OSStatus) throws {
+    fileprivate func osReturningCall(_ osCall: () -> OSStatus) throws {
         let os = osCall()
         if os != 0 {
             throw NSError(domain: NSOSStatusErrorDomain, code: Int(os), userInfo: nil)
@@ -155,17 +165,17 @@ class SimplePCMRecorder {
 //        return levelMeterSize
 //    }
     
-    private func getAudioQueueProperty<T>(propertyId:AudioQueuePropertyID, inout value:T) throws {
+    fileprivate func getAudioQueueProperty<T>(_ propertyId:AudioQueuePropertyID, value:inout T) throws {
         
-        let propertySize = UnsafeMutablePointer<UInt32>.alloc(1)
-        propertySize.memory = UInt32(sizeof(T))
+        let propertySize = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
+        propertySize.pointee = UInt32(MemoryLayout<T>.size)
         
-        let os = AudioQueueGetProperty(self.recorderState.queue.memory,
+        let os = AudioQueueGetProperty(self.recorderState.queue.pointee!,
             propertyId,
             &value,
             propertySize)
         
-        propertySize.dealloc(1)
+        propertySize.deallocate(capacity: 1)
         
         guard os == 0 else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(os), userInfo: nil) }
         

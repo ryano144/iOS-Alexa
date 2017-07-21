@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3627CF901D3D4D90000F24BD /* LoginWithAmazon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36D509F31D3D402600B48B9D /* LoginWithAmazon.framework */; };
 		36D509DD1D3D3FA000B48B9D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D509DC1D3D3FA000B48B9D /* AppDelegate.swift */; };
 		36D509E21D3D3FA000B48B9D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 36D509E01D3D3FA000B48B9D /* Main.storyboard */; };
 		36D509E41D3D3FA000B48B9D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 36D509E31D3D3FA000B48B9D /* Assets.xcassets */; };
@@ -19,6 +18,7 @@
 		36D509FD1D3D402600B48B9D /* HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D509F51D3D402600B48B9D /* HomeViewController.swift */; };
 		36D509FE1D3D402600B48B9D /* LoginViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 36D509F71D3D402600B48B9D /* LoginViewController.m */; };
 		CCF010467AF09ED167579D67 /* Pods_iOS_Alexa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 47665C9F665FD569F810C137 /* Pods_iOS_Alexa.framework */; };
+		D730E1681F21C091002CA187 /* LoginWithAmazon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D730E1671F21C091002CA187 /* LoginWithAmazon.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,13 +33,13 @@
 		36D509F01D3D402600B48B9D /* Config.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
 		36D509F11D3D402600B48B9D /* SimplePCMRecorder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimplePCMRecorder.swift; sourceTree = "<group>"; };
 		36D509F21D3D402600B48B9D /* ISSharedData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ISSharedData.swift; sourceTree = "<group>"; };
-		36D509F31D3D402600B48B9D /* LoginWithAmazon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = LoginWithAmazon.framework; sourceTree = "<group>"; };
 		36D509F51D3D402600B48B9D /* HomeViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HomeViewController.swift; sourceTree = "<group>"; };
 		36D509F61D3D402600B48B9D /* LoginViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LoginViewController.h; sourceTree = "<group>"; };
 		36D509F71D3D402600B48B9D /* LoginViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LoginViewController.m; sourceTree = "<group>"; };
 		36D50A091D3D457400B48B9D /* iOS Alexa-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "iOS Alexa-Bridging-Header.h"; sourceTree = "<group>"; };
 		47665C9F665FD569F810C137 /* Pods_iOS_Alexa.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_iOS_Alexa.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C3C44E3EAA435E500BD720C4 /* Pods-iOS Alexa.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iOS Alexa.debug.xcconfig"; path = "Pods/Target Support Files/Pods-iOS Alexa/Pods-iOS Alexa.debug.xcconfig"; sourceTree = "<group>"; };
+		D730E1671F21C091002CA187 /* LoginWithAmazon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = LoginWithAmazon.framework; path = "iOS Alexa/LoginWithAmazon.framework"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -47,8 +47,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3627CF901D3D4D90000F24BD /* LoginWithAmazon.framework in Frameworks */,
 				CCF010467AF09ED167579D67 /* Pods_iOS_Alexa.framework in Frameworks */,
+				D730E1681F21C091002CA187 /* LoginWithAmazon.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,7 +87,6 @@
 			children = (
 				36D509EE1D3D402600B48B9D /* AVS */,
 				36D509F21D3D402600B48B9D /* ISSharedData.swift */,
-				36D509F31D3D402600B48B9D /* LoginWithAmazon.framework */,
 				36D509F41D3D402600B48B9D /* ViewController */,
 				36D509DC1D3D3FA000B48B9D /* AppDelegate.swift */,
 				36D509E01D3D3FA000B48B9D /* Main.storyboard */,
@@ -122,6 +121,7 @@
 		6E6B3FF7987527087BFAB000 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				D730E1671F21C091002CA187 /* LoginWithAmazon.framework */,
 				47665C9F665FD569F810C137 /* Pods_iOS_Alexa.framework */,
 			);
 			name = Frameworks;
@@ -162,7 +162,8 @@
 				TargetAttributes = {
 					36D509D81D3D3FA000B48B9D = {
 						CreatedOnToolsVersion = 7.3;
-						DevelopmentTeam = 396UV3LCPE;
+						DevelopmentTeam = 66X3L9M4EZ;
+						LastSwiftMigration = 0830;
 					};
 				};
 			};
@@ -372,6 +373,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEVELOPMENT_TEAM = 66X3L9M4EZ;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/iOS",
@@ -382,14 +384,18 @@
 					Alexa,
 					"$(PROJECT_DIR)/iOS",
 					Alexa,
+					"$(PROJECT_DIR)/iOS\\ Alexa/**",
+					"$(PROJECT_DIR)/iOS\\ Alexa",
+					"$(PROJECT_DIR)/iOS\\ Alexa",
 				);
 				INFOPLIST_FILE = "iOS Alexa/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.chintan.iOS-Alexa";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ryano144.iOS-Alexa";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "iOS Alexa/iOS Alexa-Bridging-Header.h";
+				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
 		};
@@ -400,6 +406,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEVELOPMENT_TEAM = 66X3L9M4EZ;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/iOS",
@@ -410,14 +417,18 @@
 					Alexa,
 					"$(PROJECT_DIR)/iOS",
 					Alexa,
+					"$(PROJECT_DIR)/iOS\\ Alexa/**",
+					"$(PROJECT_DIR)/iOS\\ Alexa",
+					"$(PROJECT_DIR)/iOS\\ Alexa",
 				);
 				INFOPLIST_FILE = "iOS Alexa/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.chintan.iOS-Alexa";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ryano144.iOS-Alexa";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "iOS Alexa/iOS Alexa-Bridging-Header.h";
+				SWIFT_VERSION = 3.0;
 			};
 			name = Release;
 		};

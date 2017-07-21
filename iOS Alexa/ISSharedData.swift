@@ -8,8 +8,8 @@
 
 import Foundation
 
-public class ISSharedData : NSObject {
-    public static let sharedInstance = ISSharedData()
+open class ISSharedData : NSObject {
+    open static let sharedInstance = ISSharedData()
     
-    public var accessToken:String?
+    open var accessToken:String?
 }

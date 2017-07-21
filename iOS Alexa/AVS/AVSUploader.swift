@@ -7,20 +7,20 @@ import Foundation
 
 struct PartData {
     var headers: [String:String]
-    var data: NSData
+    var data: Data
 }
 
-class AVSUploader: NSObject, NSURLSessionTaskDelegate {
+class AVSUploader: NSObject, URLSessionTaskDelegate {
     
     var authToken:String?
     var jsonData:String?
-    var audioData:NSData?
+    var audioData:Data?
     
-    var errorHandler: ((error:NSError) -> Void)?
-    var progressHandler: ((progress:Double) -> Void)?
-    var successHandler: ((data:NSData, parts:[PartData]) -> Void)?
+    var errorHandler: ((_ error:NSError) -> Void)?
+    var progressHandler: ((_ progress:Double) -> Void)?
+    var successHandler: ((_ data:Data, _ parts:[PartData]) -> Void)?
     
-    private var session: NSURLSession!
+    fileprivate var session: Foundation.URLSession!
     
     func start() throws {
         if self.authToken == nil || self.jsonData == nil || self.audioData == nil {
@@ -28,55 +28,55 @@ class AVSUploader: NSObject, NSURLSessionTaskDelegate {
         }
         
         if self.session == nil {
-            self.session = NSURLSession(configuration: NSURLSession.sharedSession().configuration, delegate: self, delegateQueue: nil)
+            self.session = Foundation.URLSession(configuration: Foundation.URLSession.shared.configuration, delegate: self, delegateQueue: nil)
         }
         
         self.postRecording(self.authToken!, jsonData: self.jsonData!, audioData: self.audioData!)
     }
     
-    private func parseResponse(data:NSData, boundry:String) -> [PartData] {
+    fileprivate func parseResponse(_ data:Data, boundry:String) -> [PartData] {
         
-        let innerBoundry = "\(boundry)\r\n".dataUsingEncoding(NSUTF8StringEncoding)!
-        let endBoundry = "\r\n\(boundry)--\r\n".dataUsingEncoding(NSUTF8StringEncoding)!
+        let innerBoundry = "\(boundry)\r\n".data(using: String.Encoding.utf8)!
+        let endBoundry = "\r\n\(boundry)--\r\n".data(using: String.Encoding.utf8)!
         
-        var innerRanges = [NSRange]()
+        var innerRanges = [Range<Data.Index>]()
         var lastStartingLocation = 0
         
-        var boundryRange = data.rangeOfData(innerBoundry, options: NSDataSearchOptions(), range: NSMakeRange(lastStartingLocation, data.length))
-        while(boundryRange.location != NSNotFound) {
+        var boundryRange = data.range(of: innerBoundry, options: Data.SearchOptions(), in: (lastStartingLocation ..< lastStartingLocation+data.count))
+        while(boundryRange != nil) {
             
-            lastStartingLocation = boundryRange.location + boundryRange.length
-            boundryRange = data.rangeOfData(innerBoundry, options: NSDataSearchOptions(), range: NSMakeRange(lastStartingLocation, data.length - lastStartingLocation))
+            lastStartingLocation = boundryRange!.upperBound
+            boundryRange = data.range(of: innerBoundry, options: Data.SearchOptions(), in: (lastStartingLocation ..< data.count))
             
-            if boundryRange.location != NSNotFound {
-                innerRanges.append(NSMakeRange(lastStartingLocation, boundryRange.location - innerBoundry.length))
+            if boundryRange != nil {
+                innerRanges.append((lastStartingLocation ..< lastStartingLocation + boundryRange!.lowerBound - innerBoundry.count))
             } else {
-                innerRanges.append(NSMakeRange(lastStartingLocation, data.length - lastStartingLocation))
+                innerRanges.append(lastStartingLocation ..< data.count)
             }
         }
         
         var partData = [PartData]()
         
         for innerRange in innerRanges {
-            let innerData = data.subdataWithRange(innerRange)
+            let innerData = data.subdata(in: innerRange)
             
-            let headerRange = innerData.rangeOfData("\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding)!, options: NSDataSearchOptions(), range: NSMakeRange(0, innerRange.length))
+            let headerRange = innerData.range(of: "\r\n\r\n".data(using: String.Encoding.utf8)!, options: Data.SearchOptions(), in: (0 ..< innerRange.count))
             
             var headers = [String:String]()
-            if let headerData = NSString(data: innerData.subdataWithRange(NSMakeRange(0, headerRange.location)), encoding: NSUTF8StringEncoding) as? String {
+            if let headerData = NSString(data: innerData.subdata(in: (0 ..< (headerRange?.lowerBound)!)), encoding: String.Encoding.utf8.rawValue) as String? {
                 let headerLines = headerData.characters.split{$0 == "\r\n"}.map{String($0)}
                 for headerLine in headerLines {
                     let headerSplit = headerLine.characters.split{ $0 == ":" }.map{String($0)}
-                    headers[headerSplit[0]] = headerSplit[1].stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceCharacterSet())
+                    headers[headerSplit[0]] = headerSplit[1].trimmingCharacters(in: CharacterSet.whitespaces)
                 }
             }
             
-            let startLocation = headerRange.location + headerRange.length
-            let contentData = innerData.subdataWithRange(NSMakeRange(startLocation, innerRange.length - startLocation))
+            let startLocation = headerRange?.upperBound
+            let contentData = innerData.subdata(in: (startLocation! ..< innerRange.count))
             
-            let endContentRange = contentData.rangeOfData(endBoundry, options: NSDataSearchOptions(), range: NSMakeRange(0, contentData.length))
-            if endContentRange.location != NSNotFound {
-                partData.append(PartData(headers: headers, data: contentData.subdataWithRange(NSMakeRange(0, endContentRange.location))))
+            let endContentRange = contentData.range(of: endBoundry, options: NSData.SearchOptions(), in: (0 ..< contentData.count))
+            if endContentRange != nil {
+                partData.append(PartData(headers: headers, data: contentData.subdata(in: (0 ..< (endContentRange?.lowerBound)!))))
             } else {
                 partData.append(PartData(headers: headers, data: contentData))
             }
@@ -85,89 +85,89 @@ class AVSUploader: NSObject, NSURLSessionTaskDelegate {
         return partData
     }
     
-    private func postRecording(authToken:String, jsonData:String, audioData:NSData) {
-        let request = NSMutableURLRequest(URL: NSURL(string: "https://access-alexa-na.amazon.com/v1/avs/speechrecognizer/recognize")!)
-        request.cachePolicy = NSURLRequestCachePolicy.ReloadIgnoringCacheData
-        request.HTTPShouldHandleCookies = false
+    fileprivate func postRecording(_ authToken:String, jsonData:String, audioData:Data) {
+        let request = NSMutableURLRequest(url: URL(string: "https://access-alexa-na.amazon.com/v1/avs/speechrecognizer/recognize")!)
+        request.cachePolicy = NSURLRequest.CachePolicy.reloadIgnoringCacheData
+        request.httpShouldHandleCookies = false
         request.timeoutInterval = 60
-        request.HTTPMethod = "POST"
+        request.httpMethod = "POST"
         
         request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
         
-        let boundry = NSUUID().UUIDString
+        let boundry = UUID().uuidString
         let contentType = "multipart/form-data; boundary=\(boundry)"
         
         request.setValue(contentType, forHTTPHeaderField: "Content-Type")
         
         let bodyData = NSMutableData()
         
-        bodyData.appendData("--\(boundry)\r\n".dataUsingEncoding(NSUTF8StringEncoding)!)
-        bodyData.appendData("Content-Disposition: form-data; name=\"metadata\"\r\n".dataUsingEncoding(NSUTF8StringEncoding)!)
-        bodyData.appendData("Content-Type: application/json; charset=UTF-8\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding)!)
-        bodyData.appendData(jsonData.dataUsingEncoding(NSUTF8StringEncoding)!)
-        bodyData.appendData("\r\n".dataUsingEncoding(NSUTF8StringEncoding)!)
+        bodyData.append("--\(boundry)\r\n".data(using: String.Encoding.utf8)!)
+        bodyData.append("Content-Disposition: form-data; name=\"metadata\"\r\n".data(using: String.Encoding.utf8)!)
+        bodyData.append("Content-Type: application/json; charset=UTF-8\r\n\r\n".data(using: String.Encoding.utf8)!)
+        bodyData.append(jsonData.data(using: String.Encoding.utf8)!)
+        bodyData.append("\r\n".data(using: String.Encoding.utf8)!)
         
-        bodyData.appendData("--\(boundry)\r\n".dataUsingEncoding(NSUTF8StringEncoding)!)
-        bodyData.appendData("Content-Disposition: form-data; name=\"audio\"\r\n".dataUsingEncoding(NSUTF8StringEncoding)!)
-        bodyData.appendData("Content-Type: audio/L16; rate=16000; channels=1\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding)!)
-        bodyData.appendData(audioData)
-        bodyData.appendData("\r\n".dataUsingEncoding(NSUTF8StringEncoding)!)
+        bodyData.append("--\(boundry)\r\n".data(using: String.Encoding.utf8)!)
+        bodyData.append("Content-Disposition: form-data; name=\"audio\"\r\n".data(using: String.Encoding.utf8)!)
+        bodyData.append("Content-Type: audio/L16; rate=16000; channels=1\r\n\r\n".data(using: String.Encoding.utf8)!)
+        bodyData.append(audioData)
+        bodyData.append("\r\n".data(using: String.Encoding.utf8)!)
         
-        bodyData.appendData("--\(boundry)--\r\n".dataUsingEncoding(NSUTF8StringEncoding)!)
+        bodyData.append("--\(boundry)--\r\n".data(using: String.Encoding.utf8)!)
         
-        let uploadTask = self.session.uploadTaskWithRequest(request, fromData: bodyData) { (data:NSData?, response:NSURLResponse?, error:NSError?) -> Void in
+        let uploadTask = self.session.uploadTask(with: request as URLRequest, from: bodyData as Data, completionHandler: { (data:Data?, response:URLResponse?, error:Error?) -> Void in
             
-            self.progressHandler?(progress: 100.0)
+            self.progressHandler?(100.0)
             
             if let e = error {
-                self.errorHandler?(error: e)
+                self.errorHandler?(e as NSError)
             } else {
-                if let httpResponse = response as? NSHTTPURLResponse {
+                if let httpResponse = response as? HTTPURLResponse {
                     
                     if httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299 {
                         if let responseData = data, let contentTypeHeader = httpResponse.allHeaderFields["Content-Type"] {
                             var boundry: String?
-                            let ctbRange = contentTypeHeader.rangeOfString("boundary=.*?;", options: .RegularExpressionSearch)
+                            let ctbRange = (contentTypeHeader as AnyObject).range(of: "boundary=.*?;", options: .regularExpression)
                             if ctbRange.location != NSNotFound {
-                                let boundryNSS = contentTypeHeader.substringWithRange(ctbRange) as NSString
-                                boundry = boundryNSS.substringWithRange(NSRange(location: 9, length: boundryNSS.length - 10))
+                                let boundryNSS = (contentTypeHeader as AnyObject).substring(with: ctbRange) as NSString
+                                boundry = boundryNSS.substring(with: NSRange(location: 9, length: boundryNSS.length - 10))
                             }
                             
                             if let b = boundry {
-                                self.successHandler?(data: responseData, parts:self.parseResponse(responseData, boundry: b))
+                                self.successHandler?(responseData, self.parseResponse(responseData, boundry: b))
                             } else {
-                                self.errorHandler?(error: NSError(domain: Config.Error.ErrorDomain, code: Config.Error.AVSResponseBorderParseErrorCode, userInfo: [NSLocalizedDescriptionKey : "Could not find boundry in AVS response"]))
+                                self.errorHandler?(NSError(domain: Config.Error.ErrorDomain, code: Config.Error.AVSResponseBorderParseErrorCode, userInfo: [NSLocalizedDescriptionKey : "Could not find boundry in AVS response"]))
                             }
                         }
                     } else {
                         var message: NSString?
                         if data != nil {
                             do {
-                                if let errorDictionary = try NSJSONSerialization.JSONObjectWithData(data!, options: NSJSONReadingOptions(rawValue: 0)) as? [String:AnyObject], let errorValue = errorDictionary["error"] as? [String:String], let errorMessage = errorValue["message"] {
+                                if let errorDictionary = try JSONSerialization.jsonObject(with: data!, options: JSONSerialization.ReadingOptions(rawValue: 0)) as? [String:AnyObject], let errorValue = errorDictionary["error"] as? [String:String], let errorMessage = errorValue["message"] {
                                     
-                                    message = errorMessage
+                                    message = errorMessage as NSString
                                     
                                 } else {
-                                    message = NSString(data: data!, encoding: NSUTF8StringEncoding)
+                                    message = NSString(data: data!, encoding: String.Encoding.utf8.rawValue)
                                 }
                             } catch {
-                                message = NSString(data: data!, encoding: NSUTF8StringEncoding)
+                                message = NSString(data: data!, encoding: String.Encoding.utf8.rawValue)
                             }
                         }
                         let finalMessage = message == nil ? "" : message!
-                        self.errorHandler?(error: NSError(domain: Config.Error.ErrorDomain, code: Config.Error.AVSAPICallErrorCode, userInfo: [NSLocalizedDescriptionKey : "AVS error: \(httpResponse.statusCode) - \(finalMessage)"]))
+                        self.errorHandler?(NSError(domain: Config.Error.ErrorDomain, code: Config.Error.AVSAPICallErrorCode, userInfo: [NSLocalizedDescriptionKey : "AVS error: \(httpResponse.statusCode) - \(finalMessage)"]))
                     }
                     
                 }
             }
-        }
+        } as (Data?, URLResponse?, Error?) -> Void)
         
         uploadTask.resume()
     }
 
-    func URLSession(session: NSURLSession, task: NSURLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
+    func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
         
-        self.progressHandler?(progress:Double(Double(totalBytesSent) / Double(totalBytesExpectedToSend)) * 100.0)
+        self.progressHandler?(Double(Double(totalBytesSent) / Double(totalBytesExpectedToSend)) * 100.0)
         
     }
 }
